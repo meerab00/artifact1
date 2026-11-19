@@ -247,7 +247,7 @@ function checkTable(){
   const group=associative&&identity>=0&&inverses;
   const checks=[
     ['Closure',true,'Every result is in the set.'],
-    ['Associativity',associative,associative?'(a·b)·c = a·(b·c) for every triple.':'Fails for ('+[witness.map(i=>elements[i]).map(esc).join(', '])+').'],
+    ['Associativity',associative,associative?'(a·b)·c = a·(b·c) for every triple.':'Associativity fails for the triple: '+witness.map(i=>esc(elements[i])).join(', ')+'.'],
     ['Identity',identity>=0,identity>=0?'Identity element: '+esc(elements[identity])+'.':'No two-sided identity was found.'],
     ['Inverse for every element',inverses,inverses?'Every element has a two-sided inverse.':identity<0?'Cannot have group inverses without an identity.':'No inverse for: '+missing.map(esc).join(', ')+'.'],
     ['Commutativity',commutative,commutative?'a·b = b·a for every pair.':'Not commutative: '+esc(elements[pair[0]])+'·'+esc(elements[pair[1]])+' ≠ '+esc(elements[pair[1]])+'·'+esc(elements[pair[0]])+'.']
