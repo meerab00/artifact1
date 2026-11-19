@@ -38,6 +38,11 @@ th{position:sticky;top:0;background:var(--card)}
 .bar{display:flex;align-items:center;gap:8px;margin:3px 0}
 .bar i{display:block;height:14px;background:var(--acc);border-radius:3px}
 .note{color:var(--mute);font-size:.9rem}
+.node{display:inline-flex;align-items:center;justify-content:center;min-width:54px;min-height:42px;padding:7px 12px;border:2px solid var(--line);border-radius:9px;background:var(--soft);font-weight:700}
+.node.active{border-color:var(--acc);background:var(--soft)}
+.visual-lines{display:grid;gap:12px;margin:14px 0}
+.visual-lines .row{gap:10px}
+@media(max-width:560px){.visual-lines .row{align-items:flex-start;flex-wrap:wrap}.visual-lines .note{width:100%}}
 .err{color:#c0392b;font-weight:600}
 code{background:var(--soft);padding:1px 6px;border-radius:4px}
 </style>
@@ -68,12 +73,14 @@ code{background:var(--soft);padding:1px 6px;border-radius:4px}
 <div id="abGroup"></div>
 </div>
 <div class="card">
-<h2 style="margin-top:0">Test a finite operation table</h2>
-<p class="note">Enter distinct elements and the complete operation table. Rows and columns must follow the same element order.</p>
-<div class="field"><label for="gtSet">Set elements (comma-separated)</label><input id="gtSet" value="0, 1, 2"></div>
-<div class="field"><label for="gtTable">Operation table (rows separated by ; and entries by ,)</label><textarea id="gtTable" spellcheck="false">0, 1, 2; 1, 2, 0; 2, 0, 1</textarea></div>
-<div class="row"><button class="btn" onclick="checkTable()">Check group</button><span class="note">Example shown is ℤ₃ under addition modulo 3.</span></div>
-<div id="gtOut" aria-live="polite"></div>
+<h2 style="margin-top:0">See why ℤ₂ × ℤ₂ is different from ℤ₄</h2>
+<p class="note">Choose a group. Follow the arrows to see what happens when you keep adding the same element.</p>
+<div class="row">
+<button class="chip" onclick="showAbVisual('v4')">ℤ₂ × ℤ₂</button>
+<button class="chip" onclick="showAbVisual('z4')">ℤ₄</button>
+</div>
+<div id="abVisual" aria-live="polite"></div>
+</div>
 </div>
 </section>
 
@@ -209,54 +216,25 @@ function runProd(){
   $('#abGroup').innerHTML=`<p>G = ${prod(m)}</p>`+report(G);
 }
 
-/* ---------- finite operation-table checker ---------- */
-const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function checkTable(){
-  const elements=$('#gtSet').value.split(',').map(x=>x.trim());
-  const raw=$('#gtTable').value.trim();
-  const out=$('#gtOut');
-  if(!elements.length||elements.some(x=>!x)||new Set(elements).size!==elements.length){
-    out.innerHTML='<p class="err">Set must contain distinct, non-empty elements separated by commas.</p>';return;
+/* ---------- visual comparison of small abelian groups ---------- */
+function showAbVisual(which){
+  const out=$('#abVisual');
+  if(which==='z4'){
+    out.innerHTML=`<p><b>In ℤ₄, keep adding 1 (mod 4):</b></p>
+      <div class="row" style="justify-content:center;gap:8px;margin:18px 0;flex-wrap:wrap">
+      <span class="node">0</span><b>→</b><span class="node active">1</span><b>→</b><span class="node">2</span><b>→</b><span class="node">3</span><b>→</b><span class="node">0</span></div>
+      <p>1 + 1 = 2, then 2 + 1 = 3, then 3 + 1 = 0.</p>
+      <p><b>Order of 1 = 4.</b> One element generates the whole group, so ℤ₄ is cyclic.</p>`;
+  } else {
+    out.innerHTML=`<p><b>In ℤ₂ × ℤ₂, add each non-identity element to itself:</b></p>
+      <div class="visual-lines">
+      <div class="row"><span class="node">(0,0)</span><b>←→</b><span class="node active">(1,0)</span><span class="note">twice adding (1,0) returns to (0,0)</span></div>
+      <div class="row"><span class="node">(0,0)</span><b>←→</b><span class="node active">(0,1)</span><span class="note">twice adding (0,1) returns to (0,0)</span></div>
+      <div class="row"><span class="node">(0,0)</span><b>←→</b><span class="node active">(1,1)</span><span class="note">twice adding (1,1) returns to (0,0)</span></div>
+      </div>
+      <p><b>Every non-identity element has order 2.</b> There is no element of order 4, so this group is not cyclic.</p>`;
   }
-  const rows=raw.split(';').map(r=>r.split(',').map(x=>x.trim()));
-  const n=elements.length, index=new Map(elements.map((x,i)=>[x,i]));
-  if(rows.length!==n||rows.some(r=>r.length!==n)){
-    out.innerHTML='<p class="err">The table must have exactly '+n+' rows and '+n+' entries in every row.</p>';return;
-  }
-  const bad=rows.flat().filter(x=>!index.has(x));
-  if(bad.length){
-    out.innerHTML='<p class="err">Closure fails: every table entry must belong to the set. Unknown value(s): '+[...new Set(bad)].map(esc).join(', ')+'.</p>';return;
-  }
-  const T=rows.map(r=>r.map(x=>index.get(x)));
-  let associative=true, witness=null;
-  outer:for(let a=0;a<n;a++)for(let b=0;b<n;b++)for(let c=0;c<n;c++){
-    if(T[T[a][b]][c]!==T[a][T[b][c]]){associative=false;witness=[a,b,c];break outer;}
-  }
-  let identity=-1;
-  for(let e=0;e<n;e++){
-    let ok=true;for(let a=0;a<n;a++)if(T[e][a]!==a||T[a][e]!==a){ok=false;break;}
-    if(ok){identity=e;break;}
-  }
-  let inverses=true, missing=[];
-  if(identity>=0)for(let a=0;a<n;a++){
-    let found=false;for(let b=0;b<n;b++)if(T[a][b]===identity&&T[b][a]===identity){found=true;break;}
-    if(!found){inverses=false;missing.push(elements[a]);}
-  } else inverses=false;
-  let commutative=true, pair=null;
-  outer2:for(let a=0;a<n;a++)for(let b=0;b<n;b++)if(T[a][b]!==T[b][a]){commutative=false;pair=[a,b];break outer2;}
-  const group=associative&&identity>=0&&inverses;
-  const checks=[
-    ['Closure',true,'Every result is in the set.'],
-    ['Associativity',associative,associative?'(a·b)·c = a·(b·c) for every triple.':'Associativity fails for the triple: '+witness.map(i=>esc(elements[i])).join(', ')+'.'],
-    ['Identity',identity>=0,identity>=0?'Identity element: '+esc(elements[identity])+'.':'No two-sided identity was found.'],
-    ['Inverse for every element',inverses,inverses?'Every element has a two-sided inverse.':identity<0?'Cannot have group inverses without an identity.':'No inverse for: '+missing.map(esc).join(', ')+'.'],
-    ['Commutativity',commutative,commutative?'a·b = b·a for every pair.':'Not commutative: '+esc(elements[pair[0]])+'·'+esc(elements[pair[1]])+' ≠ '+esc(elements[pair[1]])+'·'+esc(elements[pair[0]])+'.']
-  ];
-  out.innerHTML='<div class="stats"><div><b>'+(group?'YES':'NO')+'</b><span>is a group</span></div><div><b>'+(group&&commutative?'ABELIAN':group?'NON-ABELIAN':'NOT A GROUP')+'</b><span>classification</span></div></div>'+
-    '<h3>Checks</h3>'+checks.map(([name,ok,detail])=>'<p><b>'+(ok?'✓':'✗')+' '+name+':</b> '+detail+'</p>').join('')+
-    '<p class="note">A group requires closure, associativity, a two-sided identity, and an inverse for every element. It is Abelian exactly when the operation is also commutative. In a valid group, the identity is automatically unique.</p>';
 }
-
 /* ---------- cyclic ---------- */
 function runCy(){
   const n=+$('#cyN').value;
@@ -306,7 +284,7 @@ function runDn(){
   $('#dnOut').innerHTML=`<p>D<sub>${n}</sub> has ${N} elements: ${n} rotations and ${n} reflections.</p>`+report(G,{extra});
 }
 
-show('ab');phiTable();runAb();runProd();runCy();runSn();runPerm();runDn();
+show('ab');phiTable();runAb();runProd();runCy();runSn();runPerm();runDn();showAbVisual('v4');
 </script>
 </body>
 </html>
