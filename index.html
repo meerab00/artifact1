@@ -20,7 +20,9 @@ nav button[aria-selected=true]{color:var(--acc);border-color:var(--acc)}
 :focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:12px 0}
 label{font-weight:600;margin-right:6px}
-input,select{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:auto;max-width:100%}
+input,select,textarea{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:auto;max-width:100%}
+textarea{width:100%;min-height:112px;resize:vertical;font: .92rem/1.5 ui-monospace,monospace}
+.field{display:grid;gap:6px;margin:10px 0}
 input[type=number]{width:96px}
 .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .btn{background:var(--acc);color:var(--bg);border:0;border-radius:6px;padding:7px 14px;font:600 .95rem Figtree,sans-serif;cursor:pointer}
@@ -64,6 +66,14 @@ code{background:var(--soft);padding:1px 6px;border-radius:4px}
 <div class="row"><label for="abP">Factors</label><input id="abP" value="2,2" aria-label="Comma-separated moduli"><button class="btn" onclick="runProd()">Build group</button></div>
 <p class="note">Type moduli separated by commas, for example <code>2,6</code>. Maximum group size 400.</p>
 <div id="abGroup"></div>
+</div>
+<div class="card">
+<h2 style="margin-top:0">Test a finite operation table</h2>
+<p class="note">Enter distinct elements and the complete operation table. Rows and columns must follow the same element order.</p>
+<div class="field"><label for="gtSet">Set elements (comma-separated)</label><input id="gtSet" value="0, 1, 2"></div>
+<div class="field"><label for="gtTable">Operation table (rows separated by ; and entries by ,)</label><textarea id="gtTable" spellcheck="false">0, 1, 2; 1, 2, 0; 2, 0, 1</textarea></div>
+<div class="row"><button class="btn" onclick="checkTable()">Check group</button><span class="note">Example shown is ℤ₃ under addition modulo 3.</span></div>
+<div id="gtOut" aria-live="polite"></div>
 </div>
 </section>
 
@@ -156,7 +166,7 @@ function report(G,opt={}){
   for(let i=0;i<N;i++){let c=i,k=1,p=0;while(c!=id){p=c;c=G.mul(c,i);k++}ord.push(k);inv.push(i==id?id:p)}
   const hist={};ord.forEach(o=>hist[o]=(hist[o]||0)+1);
   let abel='—',centre='—';
-  if(N<=150){const cen=[];let ab=true;for(let i=0;i<N;i++){let all=true;for(let j=0;j<N;j++)if(G.mul(i,j)!=G.mul(j,i)){all=false;ab=false;break}if(all)cen.push(G.labels[i])}abel=ab?'yes':'no';centre='{'+cen.join(', ')+'}'}
+  {const cen=[];let ab=true;for(let i=0;i<N;i++){let all=true;for(let j=0;j<N;j++)if(G.mul(i,j)!=G.mul(j,i)){all=false;ab=false;break}if(all)cen.push(G.labels[i])}abel=ab?'yes':'no';centre='{'+cen.join(', ')+'}'}
   const mx=Math.max(...Object.values(hist));
   let h=`<div class="stats"><div><b>${N}</b><span>order of group</span></div><div><b>${abel}</b><span>abelian</span></div><div><b>${centre.length>40?'large':centre}</b><span>centre Z(G)</span></div><div><b>${Math.max(...ord)}</b><span>largest element order</span></div></div>`;
   if(centre.length>40)h+=`<p class="note">Z(G) = ${centre}</p>`;
@@ -185,7 +195,8 @@ function runAb(){
   const formula=f.length?f.map(([p,a])=>`p(${a})`).join(' · ')+' = '+counts.join(' · ')+' = '+counts.reduce((a,b)=>a*b,1):'1';
   $('#abOut').innerHTML=`<p>n = ${f.length?f.map(([p,a])=>a>1?`${p}<sup>${a}</sup>`:p).join(' · '):'1'}, so there are <b>${rows.length}</b> abelian group(s) up to isomorphism: ${formula}.</p>
   <div class="scroll"><table><tr><th>Elementary divisors</th><th>Invariant factors</th></tr>${rows.map(r=>`<tr><td>${prod(r.el)}</td><td>${prod(r.inv)}</td></tr>`).join('')}</table></div>
-  <p class="note">Elementary divisors split into prime powers; invariant factors satisfy d₁ | d₂ | … | dₖ.</p>`;
+  <p class="note">Elementary divisors split into prime powers; invariant factors satisfy d₁ | d₂ | … | dₖ.</p>
+  <p><b>Why this list is complete:</b> The Fundamental Theorem of Finite Abelian Groups says every finite abelian group is a direct product of cyclic groups of prime-power order. For each prime power p<sup>a</sup>, its possible decompositions correspond to the partitions of a. Therefore the number of groups up to isomorphism is the product of those partition counts.</p>`;
 }
 function runProd(){
   const m=$('#abP').value.split(/[\s,]+/).filter(Boolean).map(Number);
@@ -196,6 +207,54 @@ function runProd(){
   const labels=[...Array(N).keys()].map(i=>'('+dec(i).join(', ')+')');
   const G={labels,mul:(i,j)=>{const a=dec(i),b=dec(j);return enc(a.map((x,k)=>(x+b[k])%m[k]))}};
   $('#abGroup').innerHTML=`<p>G = ${prod(m)}</p>`+report(G);
+}
+
+/* ---------- finite operation-table checker ---------- */
+const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function checkTable(){
+  const elements=$('#gtSet').value.split(',').map(x=>x.trim());
+  const raw=$('#gtTable').value.trim();
+  const out=$('#gtOut');
+  if(!elements.length||elements.some(x=>!x)||new Set(elements).size!==elements.length){
+    out.innerHTML='<p class="err">Set must contain distinct, non-empty elements separated by commas.</p>';return;
+  }
+  const rows=raw.split(';').map(r=>r.split(',').map(x=>x.trim()));
+  const n=elements.length, index=new Map(elements.map((x,i)=>[x,i]));
+  if(rows.length!==n||rows.some(r=>r.length!==n)){
+    out.innerHTML='<p class="err">The table must have exactly '+n+' rows and '+n+' entries in every row.</p>';return;
+  }
+  const bad=rows.flat().filter(x=>!index.has(x));
+  if(bad.length){
+    out.innerHTML='<p class="err">Closure fails: every table entry must belong to the set. Unknown value(s): '+[...new Set(bad)].map(esc).join(', ')+'.</p>';return;
+  }
+  const T=rows.map(r=>r.map(x=>index.get(x)));
+  let associative=true, witness=null;
+  outer:for(let a=0;a<n;a++)for(let b=0;b<n;b++)for(let c=0;c<n;c++){
+    if(T[T[a][b]][c]!==T[a][T[b][c]]){associative=false;witness=[a,b,c];break outer;}
+  }
+  let identity=-1;
+  for(let e=0;e<n;e++){
+    let ok=true;for(let a=0;a<n;a++)if(T[e][a]!==a||T[a][e]!==a){ok=false;break;}
+    if(ok){identity=e;break;}
+  }
+  let inverses=true, missing=[];
+  if(identity>=0)for(let a=0;a<n;a++){
+    let found=false;for(let b=0;b<n;b++)if(T[a][b]===identity&&T[b][a]===identity){found=true;break;}
+    if(!found){inverses=false;missing.push(elements[a]);}
+  } else inverses=false;
+  let commutative=true, pair=null;
+  outer2:for(let a=0;a<n;a++)for(let b=0;b<n;b++)if(T[a][b]!==T[b][a]){commutative=false;pair=[a,b];break outer2;}
+  const group=associative&&identity>=0&&inverses;
+  const checks=[
+    ['Closure',true,'Every result is in the set.'],
+    ['Associativity',associative,associative?'(a·b)·c = a·(b·c) for every triple.':'Fails for ('+[witness.map(i=>elements[i]).map(esc).join(', '])+').'],
+    ['Identity',identity>=0,identity>=0?'Identity element: '+esc(elements[identity])+'.':'No two-sided identity was found.'],
+    ['Inverse for every element',inverses,inverses?'Every element has a two-sided inverse.':identity<0?'Cannot have group inverses without an identity.':'No inverse for: '+missing.map(esc).join(', ')+'.'],
+    ['Commutativity',commutative,commutative?'a·b = b·a for every pair.':'Not commutative: '+esc(elements[pair[0]])+'·'+esc(elements[pair[1]])+' ≠ '+esc(elements[pair[1]])+'·'+esc(elements[pair[0]])+'.']
+  ];
+  out.innerHTML='<div class="stats"><div><b>'+(group?'YES':'NO')+'</b><span>is a group</span></div><div><b>'+(group&&commutative?'ABELIAN':group?'NON-ABELIAN':'NOT A GROUP')+'</b><span>classification</span></div></div>'+
+    '<h3>Checks</h3>'+checks.map(([name,ok,detail])=>'<p><b>'+(ok?'✓':'✗')+' '+name+':</b> '+detail+'</p>').join('')+
+    '<p class="note">A group requires closure, associativity, a two-sided identity, and an inverse for every element. It is Abelian exactly when the operation is also commutative. In a valid group, the identity is automatically unique.</p>';
 }
 
 /* ---------- cyclic ---------- */
