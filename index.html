@@ -47,6 +47,26 @@ th{position:sticky;top:0;background:var(--card)}
 code{background:var(--soft);padding:1px 6px;border-radius:4px}
 
 .viz{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:14px;margin:12px 0;overflow:auto}.loop{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin:14px 0}.mapitem{padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);text-align:center}.maprow{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:12px 0}#dnVisual svg{display:block;max-width:100%;margin:12px auto}
+
+/* 3D cube face: a visual model for the square's dihedral symmetries */
+.cube-stage{display:grid;grid-template-columns:minmax(210px,300px) 1fr;gap:22px;align-items:center}
+.cube-scene{height:250px;display:grid;place-items:center;perspective:700px;background:radial-gradient(circle,var(--card),var(--soft));border-radius:12px;overflow:hidden}
+.cube3d{position:relative;width:138px;height:138px;transform-style:preserve-3d;transform:rotateX(-22deg) rotateY(-32deg)}
+.cube-face{position:absolute;width:138px;height:138px;border:2px solid #243b73;background:#dce8ff;display:grid;place-items:center}
+.cube-front{transform:translateZ(69px);background:#f4f0ff}
+.cube-back{transform:rotateY(180deg) translateZ(69px);background:#c9d8ef}
+.cube-right{transform:rotateY(90deg) translateZ(69px);background:#9eb8df}
+.cube-left{transform:rotateY(-90deg) translateZ(69px);background:#b7c9e7}
+.cube-top{transform:rotateX(90deg) translateZ(69px);background:#e6eefa}
+.cube-bottom{transform:rotateX(-90deg) translateZ(69px);background:#879fc9}
+.face-pattern{width:100%;height:100%;display:grid;grid-template:1fr 1fr/1fr 1fr;gap:4px;padding:10px;transform-origin:center;transition:transform .45s ease}
+.face-cell{border-radius:8px;background:#7c5ce7;border:2px solid #39217f;display:grid;place-items:center;color:white;font-weight:700;font-size:1.15rem}
+.cube-readout{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.cube-readout strong{color:var(--acc)}
+.cube-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.cube-actions button{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:8px 11px;font:600 .92rem Figtree,sans-serif;cursor:pointer}
+.cube-actions button:hover{border-color:var(--acc)}
+@media(max-width:650px){.cube-stage{grid-template-columns:1fr}.cube-scene{height:220px}}
 </style>
 </head>
 <body>
@@ -116,7 +136,31 @@ code{background:var(--soft);padding:1px 6px;border-radius:4px}
 <section id="p-dn" hidden>
 <div class="card">
 <div class="row"><label for="dnN">n</label><input id="dnN" type="number" min="3" max="12" value="6"><button class="btn" onclick="runDn();drawPolygonVisual()">Build Dₙ</button></div>
-<div id="dnOut"></div><div class="viz"><b>Polygon symmetry</b><p class="note">Rotate or reflect the regular polygon to see the two types of symmetry in Dₙ.</p><div class="row"><button class="chip" onclick="polygonRotate()">Rotate</button><button class="chip" onclick="polygonReflect()">Reflect</button><button class="chip" onclick="polygonReset()">Reset</button></div><div id="dnVisual"></div></div>
+<div id="dnOut"></div><div class="viz">
+<h2 style="margin-top:0">3D Cube: discover the Dihedral Group D₄</h2>
+<p>Look at the front square face of the cube. We will keep the cube fixed and transform this square face: four rotations and four reflections.</p>
+<div class="cube-stage">
+  <div class="cube-scene"><div class="cube3d" aria-label="Three-dimensional cube">
+    <div class="cube-face cube-front"><div id="cubePattern" class="face-pattern"><span class="face-cell">1</span><span class="face-cell">2</span><span class="face-cell">3</span><span class="face-cell">4</span></div></div>
+    <div class="cube-face cube-back"></div><div class="cube-face cube-right"></div><div class="cube-face cube-left"></div><div class="cube-face cube-top"></div><div class="cube-face cube-bottom"></div>
+  </div></div>
+  <div class="cube-readout">
+    <div><strong id="cubeName">Identity: e</strong></div>
+    <p id="cubeExplain">The face is in its original position. No transformation has been applied.</p>
+    <p><b>Current element:</b> <code id="cubeElement">e</code></p>
+    <p><b>Order:</b> <span id="cubeOrder">1</span></p>
+    <p class="note" id="cubeStep">Step 1: Start with the original square face.</p>
+  </div>
+</div>
+<div class="cube-actions">
+  <button onclick="cubeRotate()">↻ Rotate 90°</button>
+  <button onclick="cubeReflect()">⇄ Reflect (mirror)</button>
+  <button onclick="cubeReset()">↺ Reset</button>
+</div>
+<p class="note"><b>Explore the rules:</b> Apply four rotations to return to the start (r⁴ = e). Apply reflection twice to return to the start (s² = e). Try reflecting, rotating and reflecting again to see srs = r⁻¹.</p>
+<div id="cubeLesson" aria-live="polite" class="note">The four numbered squares make each movement visible. Track how their positions change.</div>
+</div>
+<div class="viz"><b>Polygon symmetry</b><p class="note">Rotate or reflect the regular polygon to see the two types of symmetry in Dₙ.</p><div class="row"><button class="chip" onclick="polygonRotate()">Rotate</button><button class="chip" onclick="polygonReflect()">Reflect</button><button class="chip" onclick="polygonReset()">Reset</button></div><div id="dnVisual"></div></div>
 </div>
 </section>
 
@@ -312,6 +356,28 @@ function runDn(){
 }
 
 
+
+/* D4 action on one square face of a 3D cube: r^k s^f */
+let cubeK=0,cubeF=0,cubeMoves=0;
+function cubeUpdate(){
+  const pat=$('#cubePattern');
+  pat.style.transform='rotate('+(cubeK*90)+'deg) scaleX('+(cubeF?-1:1)+')';
+  const el=cubeF?(cubeK===0?'s':('r^'+cubeK+'s')):(cubeK===0?'e':('r^'+cubeK));
+  const order=cubeF?2:(cubeK===0?1:4/gcd(4,cubeK));
+  const names=['0°','90°','180°','270°'];
+  $('#cubeName').textContent=cubeF?'Reflection combined with rotation':'Rotation: '+names[cubeK];
+  $('#cubeElement').textContent=el;
+  $('#cubeOrder').textContent=order;
+  $('#cubeExplain').textContent=cubeF
+    ? 'The square has been mirrored and then rotated by '+names[cubeK]+'. This is one of the four reflection-type symmetries.'
+    : cubeK===0?'The face is in its original position. No transformation has been applied.'
+    :'The face has been rotated by '+names[cubeK]+'. Its shape matches the original square, but the numbered positions have moved.';
+  $('#cubeStep').textContent='Move '+cubeMoves+': current transformation is '+el+'. '+(cubeF?'A reflection-type symmetry has order 2.':'This rotation has order '+order+'.');
+  $('#cubeLesson').textContent='D₄ has 8 symmetries: 4 rotations and 4 reflections. Current element: '+el+'. Relations: r⁴=e, s²=e, and srs=r⁻¹.';
+}
+function cubeRotate(){cubeK=(cubeK+1)%4;cubeMoves++;cubeUpdate()}
+function cubeReflect(){cubeK=(4-cubeK)%4;cubeF=1-cubeF;cubeMoves++;cubeUpdate()}
+function cubeReset(){cubeK=0;cubeF=0;cubeMoves=0;cubeUpdate()}
 function drawCyclicVisual(){
  const n=+$('#cyN').value; if(!Number.isInteger(n)||n<1||n>200)return;
  const gens=n===1?[0]:[...Array(n).keys()].filter(a=>gcd(a,n)===1);
@@ -335,7 +401,7 @@ function polygonRotate(){const n=+$('#dnN').value;polyAngle=(polyAngle+360/n)%36
 function polygonReflect(){polyMirror=!polyMirror;drawPolygonVisual()}
 function polygonReset(){polyAngle=0;polyMirror=false;drawPolygonVisual()}
 
-show('ab');phiTable();$('#guidedPhi').innerHTML=$('#phiTab').innerHTML;runAb();runProd();runCy();drawCyclicVisual();runSn();runPerm();drawPermutationVisual();runDn();drawPolygonVisual();showAbVisual('v4');
+show('ab');phiTable();$('#guidedPhi').innerHTML=$('#phiTab').innerHTML;runAb();runProd();runCy();drawCyclicVisual();runSn();runPerm();drawPermutationVisual();runDn();drawPolygonVisual();cubeUpdate();showAbVisual('v4');
 </script>
 </body>
 </html>
