@@ -50,6 +50,7 @@ code{background:var(--soft);padding:1px 6px;border-radius:4px}
 <button id="t-cy" onclick="show('cy')">Cyclic ℤₙ</button>
 <button id="t-sn" onclick="show('sn')">Symmetric Sₙ</button>
 <button id="t-dn" onclick="show('dn')">Dihedral Dₙ</button>
+<button id="t-gq" onclick="show('gq')">Guided Questions</button>
 </nav>
 
 <section id="p-ab">
@@ -100,18 +101,39 @@ code{background:var(--soft);padding:1px 6px;border-radius:4px}
 </div>
 </section>
 
+<section id="p-gq" hidden>
 <div class="card">
-<h2 style="margin-top:0">Guided questions</h2>
+<h2 style="margin-top:0">Guided Questions</h2>
+<p class="sub">Select a textbook-style question to open the relevant group tool with the required values already entered. You can then explore the result and its properties.</p>
+<div class="card">
+<h2 style="margin-top:0">Finite Abelian Groups</h2>
 <div class="row">
-<button class="chip" onclick="go('ab','abN',72,runAb)">Abelian groups of order 72</button>
-<button class="chip" onclick="go('cy','cyN',20,runCy)">φ(n) for n ≤ 20</button>
-<button class="chip" onclick="go('sn','snN',5,runSn)">Even permutations in S₅</button>
-<button class="chip" onclick="go('dn','dnN',6,runDn)">Element orders in D₆</button>
-<button class="chip" onclick="go('dn','dnN',8,runDn)">Element orders in D₈</button>
-<button class="chip" onclick="go('ab','abP','2,2',runProd)">ℤ₂ × ℤ₂ has no element of order 4</button>
+<button class="chip" onclick="go('ab','abN',72,runAb)">Classify all Abelian groups of order 72</button>
+<button class="chip" onclick="go('ab','abP','2,2',runProd)">Show why ℤ₂ × ℤ₂ has no element of order 4</button>
 <button class="chip" onclick="go('ab','abP','4',runProd)">Contrast with ℤ₄</button>
 </div>
 </div>
+<div class="card">
+<h2 style="margin-top:0">Cyclic Groups</h2>
+<div class="row">
+<button class="chip" onclick="go('cy','cyN',20,runCy)">Find φ(n) and generators for n ≤ 20</button>
+</div>
+</div>
+<div class="card">
+<h2 style="margin-top:0">Symmetric Groups</h2>
+<div class="row">
+<button class="chip" onclick="go('sn','snN',5,runSn);$('#snF').value='even';runSn()">Find the even permutations in S₅</button>
+</div>
+</div>
+<div class="card">
+<h2 style="margin-top:0">Dihedral Groups</h2>
+<div class="row">
+<button class="chip" onclick="go('dn','dnN',6,runDn)">Find element orders in D₆</button>
+<button class="chip" onclick="go('dn','dnN',8,runDn)">Find element orders in D₈</button>
+</div>
+</div>
+</div>
+</section>
 </main>
 
 <script>
@@ -124,7 +146,7 @@ const Z=n=>`ℤ<sub>${n}</sub>`;
 const prod=l=>l.length?l.map(Z).join(' × '):'trivial group';
 const sup=(b,k)=>k==0?'e':k==1?b:`${b}<sup>${k}</sup>`;
 
-const tabs=['ab','cy','sn','dn'];
+const tabs=['ab','cy','sn','dn','gq'];
 function show(t){tabs.forEach(x=>{$('#p-'+x).hidden=x!=t;$('#t-'+x).setAttribute('aria-selected',x==t)});}
 function go(t,id,v,fn){show(t);$('#'+id).value=v;fn();}
 
