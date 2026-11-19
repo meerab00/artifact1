@@ -1,3 +1,231 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101827"><title>Algebra Studio | Abstract Algebra</title><link rel="stylesheet" href="styles.css"></head>
-<body data-page="home"><div id="app"></div><script src="app.js" defer></script></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Group Explorer – Algebra II, Artifact 1</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,700&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef2f6;--card:#fff;--ink:#14213d;--mute:#5a6783;--line:#ccd5e1;--acc:#0b7a75;--soft:#dff1ef}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1626;--card:#16213a;--ink:#e6ecf7;--mute:#97a5c3;--line:#2b3a5a;--acc:#4fd1c5;--soft:#12333a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Figtree,system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:32px 18px 60px}
+h1{font:700 clamp(2rem,6vw,3.2rem)/1.05 Newsreader,Georgia,serif;margin:0 0 8px}
+h2{font:600 1.3rem Newsreader,Georgia,serif;margin:22px 0 8px}
+.sub{color:var(--mute);max-width:60ch;margin:0 0 22px}
+nav{display:flex;gap:4px;flex-wrap:wrap;border-bottom:2px solid var(--line);margin-bottom:18px}
+nav button{background:none;border:0;border-bottom:3px solid transparent;margin-bottom:-2px;padding:10px 14px;font:600 1rem Figtree,sans-serif;color:var(--mute);cursor:pointer}
+nav button[aria-selected=true]{color:var(--acc);border-color:var(--acc)}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:12px 0}
+label{font-weight:600;margin-right:6px}
+input,select{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:auto;max-width:100%}
+input[type=number]{width:96px}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.btn{background:var(--acc);color:var(--bg);border:0;border-radius:6px;padding:7px 14px;font:600 .95rem Figtree,sans-serif;cursor:pointer}
+.chip{background:var(--soft);color:var(--ink);border:1px solid var(--line);border-radius:99px;padding:4px 12px;font:inherit;font-size:.9rem;cursor:pointer}
+.stats{display:flex;gap:22px;flex-wrap:wrap;margin:6px 0 12px}
+.stats b{font:700 1.6rem Newsreader,serif;display:block;line-height:1.1}
+.stats span{color:var(--mute);font-size:.85rem}
+.scroll{overflow:auto;max-height:420px;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{padding:5px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{position:sticky;top:0;background:var(--card)}
+.cay td,.cay th{text-align:center;padding:5px 8px;border:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:8px;margin:3px 0}
+.bar i{display:block;height:14px;background:var(--acc);border-radius:3px}
+.note{color:var(--mute);font-size:.9rem}
+.err{color:#c0392b;font-weight:600}
+code{background:var(--soft);padding:1px 6px;border-radius:4px}
+</style>
+</head>
+<body>
+<main>
+<h1>Group Explorer</h1>
+<p class="sub">Algebra II, Artifact 1: build finite abelian, cyclic, symmetric and dihedral groups, then look at orders, inverses, generators and parity.</p>
+
+<nav role="tablist" id="nav">
+<button id="t-ab" onclick="show('ab')">Abelian groups</button>
+<button id="t-cy" onclick="show('cy')">Cyclic ℤₙ</button>
+<button id="t-sn" onclick="show('sn')">Symmetric Sₙ</button>
+<button id="t-dn" onclick="show('dn')">Dihedral Dₙ</button>
+</nav>
+
+<section id="p-ab">
+<div class="card">
+<h2 style="margin-top:0">Classify all abelian groups of order n</h2>
+<div class="row"><label for="abN">Order n</label><input id="abN" type="number" min="1" max="5000" value="72"><button class="btn" onclick="runAb()">Classify</button></div>
+<div id="abOut"></div>
+</div>
+<div class="card">
+<h2 style="margin-top:0">Build a product ℤₙ₁ × … × ℤₙₖ</h2>
+<div class="row"><label for="abP">Factors</label><input id="abP" value="2,2" aria-label="Comma-separated moduli"><button class="btn" onclick="runProd()">Build group</button></div>
+<p class="note">Type moduli separated by commas, for example <code>2,6</code>. Maximum group size 400.</p>
+<div id="abGroup"></div>
+</div>
+</section>
+
+<section id="p-cy" hidden>
+<div class="card">
+<div class="row"><label for="cyN">n</label><input id="cyN" type="number" min="1" max="200" value="12"><button class="btn" onclick="runCy()">Show ℤₙ</button></div>
+<div id="cyOut"></div>
+</div>
+<div class="card"><h2 style="margin-top:0">φ(n) for n ≤ 20</h2><div id="phiTab" class="scroll"></div></div>
+</section>
+
+<section id="p-sn" hidden>
+<div class="card">
+<div class="row"><label for="snN">n</label>
+<select id="snN">
+<option>2</option><option>3</option><option>4</option><option selected>5</option><option>6</option>
+</select>
+<label for="snF">Show</label>
+<select id="snF"><option value="all">All permutations</option><option value="even">Even (Aₙ)</option><option value="odd">Odd only</option></select>
+<button class="btn" onclick="runSn()">Build Sₙ</button></div>
+<div id="snOut"></div>
+</div>
+<div class="card">
+<h2 style="margin-top:0">Check one permutation</h2>
+<div class="row"><label for="pc">One-line form</label><input id="pc" value="2 3 1 5 4"><button class="btn" onclick="runPerm()">Analyse</button></div>
+<p class="note">Enter the images of 1, 2, …, m. Example: <code>2 3 1 5 4</code> means 1→2, 2→3, 3→1, 4→5, 5→4.</p>
+<div id="pcOut"></div>
+</div>
+</section>
+
+<section id="p-dn" hidden>
+<div class="card">
+<div class="row"><label for="dnN">n</label><input id="dnN" type="number" min="3" max="12" value="6"><button class="btn" onclick="runDn()">Build Dₙ</button></div>
+<div id="dnOut"></div>
+</div>
+</section>
+
+<div class="card">
+<h2 style="margin-top:0">Guided questions</h2>
+<div class="row">
+<button class="chip" onclick="go('ab','abN',72,runAb)">Abelian groups of order 72</button>
+<button class="chip" onclick="go('cy','cyN',20,runCy)">φ(n) for n ≤ 20</button>
+<button class="chip" onclick="go('sn','snN',5,runSn)">Even permutations in S₅</button>
+<button class="chip" onclick="go('dn','dnN',6,runDn)">Element orders in D₆</button>
+<button class="chip" onclick="go('dn','dnN',8,runDn)">Element orders in D₈</button>
+<button class="chip" onclick="go('ab','abP','2,2',runProd)">ℤ₂ × ℤ₂ has no element of order 4</button>
+<button class="chip" onclick="go('ab','abP','4',runProd)">Contrast with ℤ₄</button>
+</div>
+</div>
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+const gcd=(a,b)=>b?gcd(b,a%b):a, lcm=(a,b)=>a/gcd(a,b)*b;
+const phi=n=>{let c=0;for(let k=1;k<=n;k++)if(gcd(k,n)==1)c++;return c};
+const factor=n=>{const f={};for(let p=2;p*p<=n;p++)while(n%p==0){f[p]=(f[p]||0)+1;n/=p}if(n>1)f[n]=(f[n]||0)+1;return f};
+const parts=(n,m=n)=>{if(n==0)return[[]];const r=[];for(let k=Math.min(n,m);k>=1;k--)parts(n-k,k).forEach(x=>r.push([k,...x]));return r};
+const Z=n=>`ℤ<sub>${n}</sub>`;
+const prod=l=>l.length?l.map(Z).join(' × '):'trivial group';
+const sup=(b,k)=>k==0?'e':k==1?b:`${b}<sup>${k}</sup>`;
+
+const tabs=['ab','cy','sn','dn'];
+function show(t){tabs.forEach(x=>{$('#p-'+x).hidden=x!=t;$('#t-'+x).setAttribute('aria-selected',x==t)});}
+function go(t,id,v,fn){show(t);$('#'+id).value=v;fn();}
+
+/* ---------- generic group report ---------- */
+function report(G,opt={}){
+  const N=G.labels.length,id=0,ord=[],inv=[];
+  for(let i=0;i<N;i++){let c=i,k=1,p=0;while(c!=id){p=c;c=G.mul(c,i);k++}ord.push(k);inv.push(i==id?id:p)}
+  const hist={};ord.forEach(o=>hist[o]=(hist[o]||0)+1);
+  let abel='—',centre='—';
+  if(N<=150){const cen=[];let ab=true;for(let i=0;i<N;i++){let all=true;for(let j=0;j<N;j++)if(G.mul(i,j)!=G.mul(j,i)){all=false;ab=false;break}if(all)cen.push(G.labels[i])}abel=ab?'yes':'no';centre='{'+cen.join(', ')+'}'}
+  const mx=Math.max(...Object.values(hist));
+  let h=`<div class="stats"><div><b>${N}</b><span>order of group</span></div><div><b>${abel}</b><span>abelian</span></div><div><b>${centre.length>40?'large':centre}</b><span>centre Z(G)</span></div><div><b>${Math.max(...ord)}</b><span>largest element order</span></div></div>`;
+  if(centre.length>40)h+=`<p class="note">Z(G) = ${centre}</p>`;
+  h+='<h2>Order histogram</h2>'+Object.keys(hist).map(o=>`<div class="bar"><span style="width:70px">order ${o}</span><i style="width:${hist[o]/mx*240}px"></i>${hist[o]}</div>`).join('');
+  if(opt.extra)h+=opt.extra;
+  if(N<=16){h+='<h2>Cayley table</h2><div class="scroll"><table class="cay"><tr><th>·</th>'+G.labels.map(l=>`<th>${l}</th>`).join('')+'</tr>'+G.labels.map((l,i)=>`<tr><th>${l}</th>`+G.labels.map((_,j)=>{const k=G.mul(i,j);return `<td style="background:hsl(${k*360/N} 60% 55% / .28)">${G.labels[k]}</td>`}).join('')+'</tr>').join('')+'</table></div><p class="note">Each colour is one element: every row and column contains each colour exactly once.</p>';}
+  const cols=G.cols||[];
+  h+='<h2>Elements, inverses and orders</h2><div class="scroll"><table><tr><th>Element</th>'+cols.map(c=>`<th>${c[0]}</th>`).join('')+'<th>Inverse</th><th>Order</th></tr>';
+  for(let i=0;i<N;i++){if(opt.filter&&!opt.filter(i))continue;h+=`<tr><td>${G.labels[i]}</td>`+cols.map(c=>`<td>${c[1](i)}</td>`).join('')+`<td>${G.labels[inv[i]]}</td><td>${ord[i]}</td></tr>`}
+  return h+'</table></div>';
+}
+
+/* ---------- abelian ---------- */
+function runAb(){
+  const n=+$('#abN').value;
+  if(!Number.isInteger(n)||n<1||n>5000){$('#abOut').innerHTML='<p class="err">Enter a whole number from 1 to 5000.</p>';return}
+  const f=Object.entries(factor(n)).map(([p,a])=>[+p,a]);
+  const combos=f.reduce((acc,[p,a])=>acc.flatMap(c=>parts(a).map(pt=>[...c,[p,pt]])),[[]]);
+  const rows=combos.map(c=>{
+    const el=c.flatMap(([p,pt])=>pt.map(k=>p**k)).sort((x,y)=>x-y);
+    const L=Math.max(0,...c.map(([p,pt])=>pt.length)),inv=[];
+    for(let j=0;j<L;j++)inv.push(c.reduce((m,[p,pt])=>m*p**(pt[j]||0),1));
+    return{el,inv:inv.reverse()};
+  });
+  const counts=f.map(([p,a])=>parts(a).length);
+  const formula=f.length?f.map(([p,a])=>`p(${a})`).join(' · ')+' = '+counts.join(' · ')+' = '+counts.reduce((a,b)=>a*b,1):'1';
+  $('#abOut').innerHTML=`<p>n = ${f.length?f.map(([p,a])=>a>1?`${p}<sup>${a}</sup>`:p).join(' · '):'1'}, so there are <b>${rows.length}</b> abelian group(s) up to isomorphism: ${formula}.</p>
+  <div class="scroll"><table><tr><th>Elementary divisors</th><th>Invariant factors</th></tr>${rows.map(r=>`<tr><td>${prod(r.el)}</td><td>${prod(r.inv)}</td></tr>`).join('')}</table></div>
+  <p class="note">Elementary divisors split into prime powers; invariant factors satisfy d₁ | d₂ | … | dₖ.</p>`;
+}
+function runProd(){
+  const m=$('#abP').value.split(/[\s,]+/).filter(Boolean).map(Number);
+  const N=m.reduce((a,b)=>a*b,1);
+  if(!m.length||m.some(x=>!Number.isInteger(x)||x<1)||N>400){$('#abGroup').innerHTML='<p class="err">Enter positive whole numbers separated by commas, with total size at most 400.</p>';return}
+  const dec=i=>{const t=[];for(let k=m.length-1;k>=0;k--){t[k]=i%m[k];i=Math.floor(i/m[k])}return t};
+  const enc=t=>t.reduce((a,x,k)=>a*m[k]+x,0);
+  const labels=[...Array(N).keys()].map(i=>'('+dec(i).join(', ')+')');
+  const G={labels,mul:(i,j)=>{const a=dec(i),b=dec(j);return enc(a.map((x,k)=>(x+b[k])%m[k]))}};
+  $('#abGroup').innerHTML=`<p>G = ${prod(m)}</p>`+report(G);
+}
+
+/* ---------- cyclic ---------- */
+function runCy(){
+  const n=+$('#cyN').value;
+  if(!Number.isInteger(n)||n<1||n>200){$('#cyOut').innerHTML='<p class="err">Enter a whole number from 1 to 200.</p>';return}
+  const gens=[...Array(n).keys()].filter(a=>gcd(a,n)==1&&(n>1||a==0));
+  const G={labels:[...Array(n).keys()].map(String),mul:(a,b)=>(a+b)%n};
+  const g=n==1?[0]:gens;
+  $('#cyOut').innerHTML=`<div class="stats"><div><b>φ(${n}) = ${phi(n)}</b><span>number of generators</span></div></div><p>Generators of ${Z(n)}: ${g.join(', ')}</p>`+report(G);
+}
+function phiTable(){
+  $('#phiTab').innerHTML='<table><tr><th>n</th><th>φ(n)</th><th>Generators of ℤₙ</th></tr>'+[...Array(20).keys()].map(i=>{const n=i+1;const g=n==1?[0]:[...Array(n).keys()].filter(a=>gcd(a,n)==1);return `<tr><td>${n}</td><td>${phi(n)}</td><td>${g.join(', ')}</td></tr>`}).join('')+'</table>';
+}
+
+/* ---------- symmetric ---------- */
+const cyc=p=>{const seen=[],cs=[];p.forEach((_,i)=>{if(seen[i])return;const c=[];let j=i;while(!seen[j]){seen[j]=1;c.push(j+1);j=p[j]}cs.push(c)});return cs};
+const cycStr=cs=>{const m=cs.filter(c=>c.length>1);return m.length?m.map(c=>'('+c.join(' ')+')').join(''):'e'};
+const sgn=(p)=>(p.length-cyc(p).length)%2==0?1:-1;
+const perms=n=>n==0?[[]]:perms(n-1).flatMap(p=>[...Array(n).keys()].map(i=>[...p.slice(0,i),n-1,...p.slice(i)]));
+function runSn(){
+  const n=+$('#snN').value,f=$('#snF').value;
+  const P=perms(n).sort((a,b)=>a.join('')>b.join('')?1:-1),idx={};
+  P.forEach((p,i)=>idx[p.join('')]=i);
+  const G={labels:P.map(p=>cycStr(cyc(p))),mul:(i,j)=>{const a=P[i],b=P[j];return idx[b.map(x=>a[x]).join('')]},
+    cols:[['One-line',i=>P[i].map(x=>x+1).join(' ')],['Cycle type',i=>cyc(P[i]).map(c=>c.length).sort((a,b)=>b-a).join('+')],['Sign',i=>sgn(P[i])==1?'+1 (even)':'−1 (odd)']]};
+  const ev=P.filter(p=>sgn(p)==1).length;
+  const extra=`<div class="stats"><div><b>${ev}</b><span>even permutations (Aₙ)</span></div><div><b>${P.length-ev}</b><span>odd permutations</span></div></div><p class="note">Check: |Aₙ| = n!/2 = ${P.length/2} ${ev==P.length/2?'✓':'✗'}. Order of a permutation = lcm of its cycle lengths; sign = (−1)<sup>n−c</sup> where c counts cycles including fixed points.</p>`;
+  $('#snOut').innerHTML=`<p>S<sub>${n}</sub> has ${P.length} elements.</p>`+report(G,{extra,filter:i=>f=='all'||(f=='even')==(sgn(P[i])==1)});
+}
+function runPerm(){
+  const v=$('#pc').value.split(/[\s,]+/).filter(Boolean).map(Number),m=v.length;
+  const ok=m>0&&v.every(x=>Number.isInteger(x)&&x>=1&&x<=m)&&new Set(v).size==m;
+  if(!ok){$('#pcOut').innerHTML='<p class="err">Enter each of 1…m exactly once, separated by spaces.</p>';return}
+  const p=v.map(x=>x-1),cs=cyc(p),inv=[];p.forEach((x,i)=>inv[x]=i+1);
+  const o=cs.reduce((a,c)=>lcm(a,c.length),1),s=sgn(p);
+  $('#pcOut').innerHTML=`<p>Cycles: <b>${cycStr(cs)}</b> · cycle lengths ${cs.map(c=>c.length).join(', ')}</p><p>Order = lcm(${cs.map(c=>c.length).join(', ')}) = <b>${o}</b> · Sign = <b>${s==1?'+1 (even)':'−1 (odd)'}</b> · Inverse (one-line) = ${inv.join(' ')}</p>`;
+}
+
+/* ---------- dihedral ---------- */
+function runDn(){
+  const n=+$('#dnN').value;
+  if(!Number.isInteger(n)||n<3||n>12){$('#dnOut').innerHTML='<p class="err">Enter a whole number from 3 to 12.</p>';return}
+  const N=2*n,L=i=>i<n?sup('r',i):(i-n==0?'s':sup('r',i-n)+'s');
+  const G={labels:[...Array(N).keys()].map(L),
+    mul:(i,j)=>{const a=i%n,e=i>=n?1:0,b=j%n,f=j>=n?1:0;return ((a+(e?n-b:b))%n)+(e^f?n:0)},
+    cols:[['Type',i=>i<n?'rotation':'reflection'],['Formula',i=>i<n?(i==0?'1':`n/gcd(n,${i}) = ${n/gcd(n,i)}`):'2']]};
+  const extra=`<p class="note">D<sub>${n}</sub> = ⟨r, s | r<sup>${n}</sup> = s² = e, srs = r⁻¹⟩. Rotation r<sup>k</sup> has order n/gcd(n,k); every reflection has order 2. The centre is ${n%2==0?`{e, r<sup>${n/2}</sup>}`:'{e}'} (${n%2==0?'n even':'n odd'}).</p>`;
+  $('#dnOut').innerHTML=`<p>D<sub>${n}</sub> has ${N} elements: ${n} rotations and ${n} reflections.</p>`+report(G,{extra});
+}
+
+show('ab');phiTable();runAb();runProd();runCy();runSn();runPerm();runDn();
+</script>
+</body>
+</html>
