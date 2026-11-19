@@ -67,6 +67,12 @@ code{background:var(--soft);padding:1px 6px;border-radius:4px}
 .cube-actions button{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:8px 11px;font:600 .92rem Figtree,sans-serif;cursor:pointer}
 .cube-actions button:hover{border-color:var(--acc)}
 @media(max-width:650px){.cube-stage{grid-template-columns:1fr}.cube-scene{height:220px}}
+
+.rubik-wrap{display:grid;grid-template-columns:minmax(260px,1.1fr) minmax(260px,1fr);gap:18px;align-items:start}
+.rubik-view{height:380px;min-height:300px;background:radial-gradient(circle at 50% 40%,#304664,#101827);border-radius:12px;overflow:hidden;touch-action:none}
+.rubik-view canvas{display:block;width:100%;height:100%}
+.rubik-controls{min-width:0}.rubik-controls .cube-actions{gap:6px}.rubik-controls .cube-actions button{flex:1;min-width:48px}
+@media(max-width:700px){.rubik-wrap{grid-template-columns:1fr}.rubik-view{height:320px}}
 </style>
 </head>
 <body>
@@ -137,28 +143,22 @@ code{background:var(--soft);padding:1px 6px;border-radius:4px}
 <div class="card">
 <div class="row"><label for="dnN">n</label><input id="dnN" type="number" min="3" max="12" value="6"><button class="btn" onclick="runDn();drawPolygonVisual()">Build Dₙ</button></div>
 <div id="dnOut"></div><div class="viz">
-<h2 style="margin-top:0">3D Cube: discover the Dihedral Group D₄</h2>
-<p>Look at the front square face of the cube. We will keep the cube fixed and transform this square face: four rotations and four reflections.</p>
-<div class="cube-stage">
-  <div class="cube-scene"><div class="cube3d" aria-label="Three-dimensional cube">
-    <div class="cube-face cube-front"><div id="cubePattern" class="face-pattern"><span class="face-cell">1</span><span class="face-cell">2</span><span class="face-cell">3</span><span class="face-cell">4</span></div></div>
-    <div class="cube-face cube-back"></div><div class="cube-face cube-right"></div><div class="cube-face cube-left"></div><div class="cube-face cube-top"></div><div class="cube-face cube-bottom"></div>
-  </div></div>
+<h2 style="margin-top:0">Interactive 3×3 Rubik’s Cube</h2>
+<p>Drag the cube to look around. Turn its faces, scramble it, undo a move or reset it. Then explore the eight symmetries of one square face as the dihedral group D₄.</p>
+<div class="rubik-wrap">
+ <div id="rubikView" class="rubik-view" aria-label="Interactive three-dimensional Rubik's Cube"></div>
+ <div class="rubik-controls">
+  <div class="cube-actions"><button onclick="rubikTurn('U')">U ↑</button><button onclick="rubikTurn('D')">D ↓</button><button onclick="rubikTurn('L')">L ←</button><button onclick="rubikTurn('R')">R →</button><button onclick="rubikTurn('F')">F ↻</button><button onclick="rubikTurn('B')">B ↺</button></div>
+  <div class="cube-actions"><button onclick="rubikUndo()">Undo</button><button onclick="rubikScramble()">Scramble</button><button onclick="rubikReset()">Reset cube</button></div>
+  <p id="rubikStatus" class="note" aria-live="polite">Loading 3D cube…</p>
   <div class="cube-readout">
-    <div><strong id="cubeName">Identity: e</strong></div>
-    <p id="cubeExplain">The face is in its original position. No transformation has been applied.</p>
-    <p><b>Current element:</b> <code id="cubeElement">e</code></p>
-    <p><b>Order:</b> <span id="cubeOrder">1</span></p>
-    <p class="note" id="cubeStep">Step 1: Start with the original square face.</p>
+   <b>Explore the square face: D₄</b>
+   <p>The symmetries of a square are four rotations and four reflections. They form D₄. These are symmetries of one square face—not the complete set of Rubik’s Cube moves.</p>
+   <div class="cube-actions"><button onclick="faceSymmetry('e')">Identity</button><button onclick="faceSymmetry('r')">Rotate 90°</button><button onclick="faceSymmetry('r2')">Rotate 180°</button><button onclick="faceSymmetry('r3')">Rotate 270°</button><button onclick="faceSymmetry('s')">Reflect</button><button onclick="faceSymmetry('reset')">Reset face</button></div>
+   <p><b>Element:</b> <code id="faceSymName">e</code> · <b>Order:</b> <span id="faceSymOrder">1</span></p>
+   <p id="faceSymExplain" class="note">Identity: the square stays unchanged.</p>
   </div>
-</div>
-<div class="cube-actions">
-  <button onclick="cubeRotate()">↻ Rotate 90°</button>
-  <button onclick="cubeReflect()">⇄ Reflect (mirror)</button>
-  <button onclick="cubeReset()">↺ Reset</button>
-</div>
-<p class="note"><b>Explore the rules:</b> Apply four rotations to return to the start (r⁴ = e). Apply reflection twice to return to the start (s² = e). Try reflecting, rotating and reflecting again to see srs = r⁻¹.</p>
-<div id="cubeLesson" aria-live="polite" class="note">The four numbered squares make each movement visible. Track how their positions change.</div>
+ </div>
 </div>
 <div class="viz"><b>Polygon symmetry</b><p class="note">Rotate or reflect the regular polygon to see the two types of symmetry in Dₙ.</p><div class="row"><button class="chip" onclick="polygonRotate()">Rotate</button><button class="chip" onclick="polygonReflect()">Reflect</button><button class="chip" onclick="polygonReset()">Reset</button></div><div id="dnVisual"></div></div>
 </div>
@@ -401,6 +401,72 @@ function polygonRotate(){const n=+$('#dnN').value;polyAngle=(polyAngle+360/n)%36
 function polygonReflect(){polyMirror=!polyMirror;drawPolygonVisual()}
 function polygonReset(){polyAngle=0;polyMirror=false;drawPolygonVisual()}
 
+
+/* Interactive 3x3 Rubik cube. D4 below describes square-face symmetries, not all cube moves. */
+let rubik={scene:null,camera:null,renderer:null,root:null,cubies:[],busy:false,history:[],queue:[]};
+function loadThreeAndBuild(){
+ if(window.THREE){buildRubik();return}
+ const tag=document.createElement('script');tag.src='https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js';
+ tag.onload=buildRubik;tag.onerror=()=>{$('#rubikStatus').textContent='3D library failed to load. Check your internet connection and refresh.'};
+ document.head.appendChild(tag);
+}
+function buildRubik(){
+ const T=window.THREE,host=$('#rubikView');if(!T||!host)return;
+ const w=host.clientWidth||360,h=host.clientHeight||360;
+ rubik.scene=new T.Scene();rubik.scene.background=new T.Color(0x142238);
+ rubik.camera=new T.PerspectiveCamera(38,w/h,.1,100);rubik.camera.position.set(5.4,5.1,6.8);rubik.camera.lookAt(0,0,0);
+ rubik.renderer=new T.WebGLRenderer({antialias:true});rubik.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));rubik.renderer.setSize(w,h);
+ host.innerHTML='';host.appendChild(rubik.renderer.domElement);
+ rubik.scene.add(new T.HemisphereLight(0xffffff,0x526078,2));
+ const light=new T.DirectionalLight(0xffffff,2);light.position.set(5,8,6);rubik.scene.add(light);
+ rubik.root=new T.Group();rubik.scene.add(rubik.root);createCubies();
+ let dragging=false,px=0,py=0;
+ host.onpointerdown=e=>{dragging=true;px=e.clientX;py=e.clientY;host.setPointerCapture(e.pointerId)};
+ host.onpointermove=e=>{if(!dragging||rubik.busy)return;const dx=e.clientX-px,dy=e.clientY-py;px=e.clientX;py=e.clientY;rubik.root.rotation.y+=dx*.009;rubik.root.rotation.x+=dy*.009};
+ host.onpointerup=host.onpointercancel=()=>dragging=false;
+ if(window.ResizeObserver)new ResizeObserver(()=>{const ww=host.clientWidth,hh=host.clientHeight;if(!ww||!hh)return;rubik.camera.aspect=ww/hh;rubik.camera.updateProjectionMatrix();rubik.renderer.setSize(ww,hh)}).observe(host);
+ (function frame(){requestAnimationFrame(frame);rubik.renderer.render(rubik.scene,rubik.camera)})();
+ $('#rubikStatus').textContent='Ready. Drag to view the cube; use the buttons to turn a face.';
+}
+function createCubies(){
+ const T=window.THREE;rubik.cubies=[];const colours={R:0xc83232,L:0xff8b18,U:0xf5f5f0,D:0xf2d52e,F:0x24a85a,B:0x2865cf};
+ for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
+  const mesh=new T.Mesh(new T.BoxGeometry(.96,.96,.96),new T.MeshStandardMaterial({color:0x17191d,roughness:.6}));
+  mesh.position.set(x,y,z);
+  const faces=[['R',x===1,[1,0,0]],['L',x===-1,[-1,0,0]],['U',y===1,[0,1,0]],['D',y===-1,[0,-1,0]],['F',z===1,[0,0,1]],['B',z===-1,[0,0,-1]]];
+  faces.forEach(([name,visible,n])=>{if(!visible)return;const sticker=new T.Mesh(new T.PlaneGeometry(.78,.78),new T.MeshStandardMaterial({color:colours[name],side:T.DoubleSide,roughness:.5}));sticker.position.set(n[0]*.486,n[1]*.486,n[2]*.486);if(name==='R'||name==='L')sticker.rotation.y=Math.PI/2;if(name==='U'||name==='D')sticker.rotation.x=-Math.PI/2;mesh.add(sticker)});
+  rubik.root.add(mesh);rubik.cubies.push(mesh);
+ }
+}
+function rubikTurn(face,record=true){
+ if(!rubik.root)return;if(rubik.busy){rubik.queue.push([face,record]);return}
+ const cfg={R:[0,1,1],L:[0,-1,-1],U:[1,1,-1],D:[1,-1,1],F:[2,1,-1],B:[2,-1,1]}[face];if(!cfg)return;
+ const [axis,layer,sign]=cfg,vec=new THREE.Vector3(axis===0?1:0,axis===1?1:0,axis===2?1:0);
+ const chosen=rubik.cubies.filter(c=>Math.round(c.position.getComponent(axis))===layer);
+ const pivot=new THREE.Group();rubik.root.add(pivot);chosen.forEach(c=>{rubik.root.remove(c);pivot.add(c)});
+ rubik.busy=true;let elapsed=0;const angle=sign*Math.PI/2;
+ function animate(){elapsed+=16;const t=Math.min(1,elapsed/220);pivot.rotation.set(0,0,0);if(axis===0)pivot.rotation.x=angle*t;if(axis===1)pivot.rotation.y=angle*t;if(axis===2)pivot.rotation.z=angle*t;
+  if(t<1){requestAnimationFrame(animate);return}
+  const q=new THREE.Quaternion().setFromAxisAngle(vec,angle);
+  chosen.forEach(c=>{c.position.applyAxisAngle(vec,angle);c.position.set(Math.round(c.position.x),Math.round(c.position.y),Math.round(c.position.z));c.quaternion.premultiply(q);pivot.remove(c);rubik.root.add(c)});
+  rubik.root.remove(pivot);rubik.busy=false;if(record)rubik.history.push(face);
+  $('#rubikStatus').textContent='Turned '+face+'. Drag to inspect the new arrangement.';
+  if(rubik.queue.length){const next=rubik.queue.shift();rubikTurn(next[0],next[1])}
+ }animate();
+}
+function rubikUndo(){if(rubik.busy)return;const f=rubik.history.pop();if(!f){$('#rubikStatus').textContent='No move to undo.';return}const opposite={R:'L',L:'R',U:'D',D:'U',F:'B',B:'F'}[f];rubikTurn(opposite,false)}
+function rubikScramble(){if(rubik.busy||rubik.queue.length)return;const faces=['U','D','L','R','F','B'];const seq=Array.from({length:12},()=>faces[Math.floor(Math.random()*6)]);seq.forEach(f=>rubik.queue.push([f,true]));const first=rubik.queue.shift();rubikTurn(first[0],first[1]);$('#rubikStatus').textContent='Scrambling with 12 face turns…'}
+function rubikReset(){if(rubik.busy){$('#rubikStatus').textContent='Wait for the current turn to finish, then reset.';return}rubik.queue=[];rubik.root.rotation.set(0,0,0);rubik.root.clear();rubik.history=[];createCubies();$('#rubikStatus').textContent='Cube reset to its solved state.'}
+let faceSymK=0,faceSymF=0;
+function faceSymmetry(which){
+ if(which==='reset'||which==='e'){faceSymK=0;faceSymF=0}else if(which==='r')faceSymK=(faceSymK+1)%4;else if(which==='r2')faceSymK=(faceSymK+2)%4;else if(which==='r3')faceSymK=(faceSymK+3)%4;else if(which==='s')faceSymF=1-faceSymF;
+ const name=faceSymF?['s','rs','r²s','r³s'][faceSymK]:['e','r','r²','r³'][faceSymK];
+ const order=faceSymF?2:(faceSymK===0?1:4/gcd(4,faceSymK));
+ $('#faceSymName').textContent=name;$('#faceSymOrder').textContent=order;
+ $('#faceSymExplain').textContent=faceSymF?'Reflection-type symmetry: applying this same reflection twice gives the identity (order 2).':'Rotation by '+(faceSymK*90)+'°. Four quarter-turns return to the identity; this element has order '+order+'.';
+}
+
+loadThreeAndBuild();
 show('ab');phiTable();$('#guidedPhi').innerHTML=$('#phiTab').innerHTML;runAb();runProd();runCy();drawCyclicVisual();runSn();runPerm();drawPermutationVisual();runDn();drawPolygonVisual();cubeUpdate();showAbVisual('v4');
 </script>
 </body>
