@@ -1,4 +1,4 @@
-name: Deploy ParcelFlow to GitHub Pages
+name: Deploy Algebra Studio to GitHub Pages
 on:
   push:
     branches: ["main"]
