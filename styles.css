@@ -44,3 +44,18 @@
 .px-swap-step span{display:block;font-size:10px;letter-spacing:.08em;color:var(--muted);font-weight:700}
 .px-swap-step strong{display:block;font-size:22px;margin:7px 0}
 .px-swap-step p{margin:0;font-size:12px;color:var(--muted)}
+
+/* Step-by-step permutation transpositions */
+.px-swap-intro{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card);margin:12px 0}
+.px-swap-intro p,.px-swap-final p,.px-swap-rule{font-size:13px;line-height:1.6;color:var(--muted);margin:9px 0 0}
+.px-swap-row{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 12px}
+.px-swap-row b{display:grid;place-items:center;min-width:32px;height:34px;padding:0 7px;border:1px solid var(--line);border-radius:8px;background:var(--soft);font-size:14px}
+.px-swap-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:14px 0}
+.px-swap-step{min-width:0;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.px-swap-step-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.px-swap-step-head span,.px-swap-step>small{font-size:10px;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.px-swap-step-head strong{font-size:20px}
+.px-swap-step>p{font-size:12px;color:var(--muted);margin:7px 0}
+.px-swap-step>small{display:block;margin-top:8px}
+.px-swap-final{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--soft)}
+.px-swap-rule{padding:12px 14px;border-left:3px solid var(--acc);background:var(--card);border-radius:8px}
