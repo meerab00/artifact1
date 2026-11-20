@@ -35,3 +35,12 @@
 .px-quiz{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.px-quiz>div{border:1px solid #e7eaf2;border-radius:13px;padding:16px}.px-quiz>div>b{font-size:12px}.px-options{display:flex;gap:7px;flex-wrap:wrap;margin:13px 0}.px-options button{min-width:39px;border:1px solid #dce2ef;border-radius:8px;background:#fff;padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer}.px-options button:hover{background:#edf0ff;border-color:#8290eb}.px-quiz p{font-size:10px;line-height:1.7;margin:7px 0 0}.px-correct{color:#16805d}.px-incorrect{color:#b64a3c}
 .px-finish{padding:26px;border-radius:18px;background:linear-gradient(120deg,#eef1ff,#f7f8ff);border:1px solid #dfe5ff;margin:18px 0}.px-finish>p{font-size:12px;line-height:1.8;color:#5f6c86;max-width:850px}.px-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:17px 0}.px-facts div{background:#fff;padding:14px;border:1px solid #e5e9f7;border-radius:12px}.px-facts strong{display:block;font:800 20px Manrope;color:#4056c2}.px-facts span{font-size:10px;color:#69758a}.px-finish .px-last-note{font-size:10px;color:#7a859b}
 @media(max-width:700px){.px-hero{padding:24px 18px}.px-seat-row{gap:4px}.px-seat-row span{width:34px;height:36px}.px-classroom{gap:12px}.px-shift{font-size:22px}.px-section{padding:20px 15px}.px-three,.px-quiz{grid-template-columns:1fr}.px-cycle-board{grid-template-columns:1fr}.px-map-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.px-journey-row{grid-template-columns:25px 1fr 25px 1fr}.px-journey-row strong{grid-column:2/-1}.px-facts{grid-template-columns:1fr}.px-equivalence{gap:10px}.px-path a{font-size:9px;padding:8px 10px}}
+
+/* Permutation swap walkthrough */
+.px-swap-section{margin-top:22px;padding:22px;border:1px solid var(--line);border-radius:16px;background:var(--panel,rgba(120,130,160,.06))}
+.px-swap-section h3{margin:0 0 8px}
+.px-swap-steps{display:flex;flex-wrap:wrap;gap:12px;margin:14px 0}
+.px-swap-step{min-width:125px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card,white)}
+.px-swap-step span{display:block;font-size:10px;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.px-swap-step strong{display:block;font-size:22px;margin:7px 0}
+.px-swap-step p{margin:0;font-size:12px;color:var(--muted)}
